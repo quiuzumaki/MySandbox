@@ -3,30 +3,17 @@
 #include <TlHelp32.h>
 #include <Psapi.h> 
 #include <iostream>
+#include "HookFunctions.h"
 
 #ifndef HOOK_H
 #define HOOK_H
 
-struct ModuleProcessInfo {
-	HANDLE hProcess;
-	MODULEINFO moduleInfo;
-	ModuleProcessInfo(HANDLE hProcess, MODULEINFO moduleInfo): 
-		hProcess(hProcess), moduleInfo(moduleInfo) 
-	{}
-	
-	ModuleProcessInfo(HANDLE hProcess = NULL): hProcess(hProcess) {}
-};
-
- // PCSTR lpModuleName[] = { "KERNEL32.dll", "USER32.dll" };
-// #define SIZE_OF_MODULE std::size(lpModuleName)
-
-extern PCSTR lpAPIKernel[];
+static PCSTR lpAPIKernel[] = { "CreateFileA", "CreateFileW", "ReadFile", "WriteFile", "DeleteFileW" };
 
 BOOL PatchIATEntry(PBYTE pTarget, PIMAGE_IMPORT_DESCRIPTOR pModuleEntry, PCSTR pModuleName);
-VOID InstallHookIAT();
+VOID InstallHookIAT(LPCSTR);
 
-PBYTE ReadModuleProcess(const ModuleProcessInfo info);
-BOOL WriteModuleProcess(const ModuleProcessInfo info, LPCVOID pBuffer);
+MODULEINFO GetModuleInfo(LPCSTR lpModuleName);
 
 VOID InstallHookProcess(LPCVOID pBuffer);
 #endif // !HOOK_H

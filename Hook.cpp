@@ -1,8 +1,5 @@
 #include "pch.h"
 #include "Hook.h"
-#include "HookFunctions.h"
-
-PCSTR lpAPIKernel[] = { "CreateFileA", "CreateFileW", "ReadFile", "ReadFileEx", "DeleteFileA"};
 
 BOOL PatchIATEntry(PBYTE pTarget, PIMAGE_IMPORT_DESCRIPTOR pModuleEntry, PCSTR pModuleName) {
 
@@ -16,9 +13,9 @@ BOOL PatchIATEntry(PBYTE pTarget, PIMAGE_IMPORT_DESCRIPTOR pModuleEntry, PCSTR p
 		for (INT i = 0; i < 4; i++) {
 			if (!strncmp(lpAPIKernel[i], importByName->Name, strlen(lpAPIKernel[i]))) {
 				found = TRUE;
-				MessageBox(NULL, "Install Hook SuccessFull", "CreateFile", NULL);
 				DWORD protect = 0;
 				VirtualProtect(firstThunk, 8, PAGE_READWRITE, &protect);
+				MessageBox(GetActiveWindow(), lpAPIKernel[i], "Patch IAT", MB_OK);
 				firstThunk->u1.Function = GetAddressOfHook_KERNEL32(lpAPIKernel[i]);
 				break;
 			}
@@ -30,8 +27,11 @@ BOOL PatchIATEntry(PBYTE pTarget, PIMAGE_IMPORT_DESCRIPTOR pModuleEntry, PCSTR p
 	return found;
 }
 
-VOID InstallHookIAT() {
-	PVOID pBase = GetModuleHandleA(NULL);
+VOID InstallHookIAT(LPCSTR lpModuleName) {
+	MODULEINFO info = { };
+	GetModuleInformation(GetCurrentProcess(), GetModuleHandleA(lpModuleName), &info, sizeof(MODULEINFO));
+
+	PVOID pBase = info.lpBaseOfDll;
 
 	PBYTE imageBase = (PBYTE)pBase;
 
@@ -54,54 +54,12 @@ VOID InstallHookIAT() {
 		PSTR pModuleNameOfPE = PSTR(imageBase + importDescriptor->Name);
 
 		if (!strcmp(pModuleNameOfPE, "KERNEL32.dll")) {
+			MessageBox(GetActiveWindow(), pModuleNameOfPE, "Install Hook IAT", MB_OK);
 			PatchIATEntry(imageBase, importDescriptor, "KERNEL32.dll");
 		}
-
 		importDescriptor++;
 	}
 
-}
-
-PBYTE ReadModuleProcess(const ModuleProcessInfo info) {
-	MODULEINFO moduleInfo = info.moduleInfo;
-	PBYTE buffer = (PBYTE)malloc(moduleInfo.SizeOfImage + 1);
-	// PBYTE buffer = (PBYTE)VirtualAllocEx(GetModuleHandleA(0), NULL, info.moduleInfo.SizeOfImage + 1, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-	SIZE_T NumberOfBytesToRead = moduleInfo.SizeOfImage;
-	SIZE_T NumberOfBytesActuallyRead;
-	
-	try {
-		ReadProcessMemory(info.hProcess, (LPVOID)moduleInfo.lpBaseOfDll, buffer, NumberOfBytesToRead, &NumberOfBytesActuallyRead);
-	}
-	catch (const std::exception& e) {
-		throw std::runtime_error("cannot write all byte in process" + std::to_string(GetLastError()));
-	}
-
-	if (NumberOfBytesActuallyRead != NumberOfBytesToRead) {
-		throw std::runtime_error("cannot read all byte in process" + std::to_string(GetLastError()));
-	}
-
-	return buffer;
-}
-
-BOOL WriteModuleProcess(const ModuleProcessInfo info, LPCVOID pBuffer) {
-	MODULEINFO moduleInfo = info.moduleInfo;
-	SIZE_T NumberOfBytesToWrite = moduleInfo.SizeOfImage;
-	SIZE_T NumberOfBytesActuallyWrite;
-
-	try {
-		
-		WriteProcessMemory(info.hProcess, moduleInfo.lpBaseOfDll, pBuffer, NumberOfBytesToWrite, &NumberOfBytesActuallyWrite);
-
-	} catch (const std::exception& e) {
-		throw std::runtime_error("WriteProcessMemory is error!!" + std::to_string(GetLastError()));
-	}
-	
-
-	if (NumberOfBytesActuallyWrite != NumberOfBytesToWrite) {
-		throw std::runtime_error("cannot write all byte in process" + std::to_string(GetLastError()));
-	}
-
-	return TRUE;
 }
 
 VOID InstallHookProcess(LPCVOID pTarget) {

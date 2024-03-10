@@ -8,6 +8,7 @@ ADDRESS_SIZE GetAddressOfHook_KERNEL32(PCSTR lpAPIName) {
 	// return GetAddressOfHook_REGISTRY(lpAPIName);
 	return NULL;
 }
+
 ADDRESS_SIZE GetAddressOfHook_FILE(PCSTR lpAPIName) {
 	if (!strcmp(lpAPIName, "CreateFileA")) {
 		return (ADDRESS_SIZE)HookCreateFileA;
@@ -18,17 +19,11 @@ ADDRESS_SIZE GetAddressOfHook_FILE(PCSTR lpAPIName) {
 	else if (!strcmp(lpAPIName, "ReadFile")) {
 		return (ADDRESS_SIZE)HookReadFile;
 	}
-	else if (!strcmp(lpAPIName, "ReadFileEx")) {
-		return (ADDRESS_SIZE)HookReadFile;
-	}
 	else if (!strcmp(lpAPIName, "WriteFile")) {
 		return (ADDRESS_SIZE)HookWriteFile;
 	}
-	else if (!strcmp(lpAPIName, "WriteFileEx")) {
-		return (ADDRESS_SIZE)HookWriteFileEx;
-	}
-	else if (!strcmp(lpAPIName, "DeleteFileA")) {
-		return (ADDRESS_SIZE)HookDeleteFileA;
+	else if (!strcmp(lpAPIName, "DeleteFileW")) {
+		return (ADDRESS_SIZE)HookDeleteFileW;
 	}
 	return 0;
 }
@@ -37,3 +32,44 @@ ADDRESS_SIZE GetAddressOfHook_REGISTRY(PCSTR lpAPIName) {
 	return 0;
 }
 
+LPVOID GetFunctionPtr(LPCSTR lpModule, LPCSTR lpAPIName) {
+	HMODULE hModule = GetModuleHandleA(lpModule);
+	if (hModule) 
+		return GetProcAddress(hModule, lpAPIName);
+	return NULL;
+}
+
+BOOL InstallDetoursHook() {
+	// if (lpAPIName == NULL) return FALSE;
+	DetourRestoreAfterWith();
+
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+
+	DetourAttach(&(PVOID&)OriginalNtCreateFile, HookNtCreateFile);
+	DetourAttach(&(PVOID&)OriginalNtOpenFile, HookNtOpenFile);
+	DetourAttach(&(PVOID&)OriginalNtReadFile, HookNtReadFile);
+	DetourAttach(&(PVOID&)OriginalNtWriteFile, HookNtWriteFile);
+	DetourAttach(&(PVOID&)OriginalNtDeleteFile, HookNtDeleteFile);
+
+	DetourTransactionCommit();
+
+	return TRUE;
+}
+
+BOOL UninstallDetoursHook() {
+	// if (lpAPIName == NULL) return FALSE;
+
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	
+	DetourAttach(&(PVOID&)OriginalNtCreateFile, HookNtCreateFile);
+	DetourAttach(&(PVOID&)OriginalNtOpenFile, HookNtOpenFile);
+	DetourAttach(&(PVOID&)OriginalNtReadFile, HookNtReadFile);
+	DetourAttach(&(PVOID&)OriginalNtWriteFile, HookNtWriteFile);
+	DetourAttach(&(PVOID&)OriginalNtDeleteFile, HookNtDeleteFile);
+
+	DetourTransactionCommit();
+
+	return TRUE;
+}

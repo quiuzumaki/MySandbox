@@ -2,6 +2,7 @@
 
 #include <Windows.h>
 #include "File.h"
+#include <detours.h>
 
 #ifndef HOOKFUNCTIONS_H
 #define HOOKFUNCTIONS_H
@@ -15,5 +16,12 @@ typedef DWORD ADDRESS_SIZE;
 ADDRESS_SIZE GetAddressOfHook_KERNEL32(PCSTR lpAPIName);
 ADDRESS_SIZE GetAddressOfHook_FILE(PCSTR lpAPIName);
 ADDRESS_SIZE GetAddressOfHook_REGISTRY(PCSTR lpAPIName);
+
+LPVOID GetFunctionPtr(LPCSTR lpModule, LPCSTR lpAPIName); 
+
+BOOL InstallDetoursHook();
+BOOL UninstallDetoursHook();
+
+BOOL Attack();
 
 #endif // !HOOKFUNCTIONS_H
