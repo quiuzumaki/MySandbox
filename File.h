@@ -6,13 +6,13 @@
 #include <Windows.h>
 #include <iostream>
 #include <winternl.h>
-#include "HookFunctions.h"
-#include "Logs.h"
-#include "ObjectsManager.h"
 #include <winnt.h>
-#include <detours.h>
 #include <filesystem>
 #include <ShlObj.h>
+
+#include "HookFunctions.h"
+#include "ObjectsManager.h"
+#include "Logs.h"
 
 namespace fs = std::filesystem;
 
@@ -26,11 +26,13 @@ namespace fs = std::filesystem;
 #define DIR_PROGRAM_FILESX86          0x002a        // x86 C:\Program Files on RISC
 
 static int lstDIRID[] = { DIR_WINDOWS, DIR_SYSTEM, DIR_PROGRAM_FILES, DIR_PROGRAM_FILESX86 };
-static std::string lstExtentions[] = {".*", "\\*"};
+static std::string lstExtentions[] = {"*"};
+static std::string myFile[] = { "Logs.txt" };
 
 BOOL is_belong_to(fs::path pathName, REFKNOWNFOLDERID rfid);
 BOOL path_is_allowed(std::string pathName);
 BOOL check_extensions(fs::path pathExtension);
+BOOL check_file(fs::path pathFile);
 
 // define object file
 

@@ -1,70 +1,75 @@
 #include "pch.h"
 #include "Logs.h"
 
-//Logs::Logs() {
-//	this->mRecordsTable = new RecordsTable();
-//}
-//
-//Logs::~Logs() {
-//	delete this->mRecordsTable;
-//}
-//
-//inline BOOL Logs::isExist(LPCSTR lpAPIName) {
-//	if (this->isEmpty()) {
-//		return FALSE;
-//	}
-//
-//	if (this->mRecordsTable->find(lpAPIName) != this->mRecordsTable->end()) {
-//		return TRUE;
-//	}
-//	return FALSE;
-//}
-//
-//inline BOOL Logs::insertRecord(LPCSTR lpAPIName, Object* object) {
-//	if (object == NULL) {
-//		return FALSE;
-//	}
-//
-//	(*this->mRecordsTable)[lpAPIName].push_back(object->getInfo());
-//	return TRUE;
-//}
-//
-//inline BOOL Logs::insertRecord(LPCSTR lpAPIName, LPCSTR lpInfo) {
-//	(*this->mRecordsTable)[lpAPIName].push_back(lpInfo);
-//	return TRUE;
-//}
-//
-//VOID Logs::getLogs() {
-//	for (RecordsTable::iterator it = this->mRecordsTable->begin(); it != this->mRecordsTable->end(); it++) {
-//		std::cout << it->first;
-//
-//		std::vector<LPCSTR> lstFileName = it->second;
-//		std::cout << ": " + std::to_string(lstFileName.size()) + "\n";
-//		
-//		for (int i = 0; i < lstFileName.size(); i++) {
-//			std::cout << "\t\t" + (std::string)(lstFileName[i]) + "\n";
-//		}
-//		std::cout << "\n";
-//	}
-//}
-//
-//inline BOOL Logs::isEmpty() {
-//	return this->mRecordsTable->empty();
-//}
-//
-//inline VOID Logs::writeLogsToFile() {
-//	// open file 
-//	std::ofstream file(pathToFileName);
-//
-//	if (file.is_open()) {
-//		for (RecordsTable::iterator it = this->mRecordsTable->begin(); it != this->mRecordsTable->end(); it++) {
-//			file << "==============  " << it->first << "  ==============\n";
-//
-//			for (int i = 0; i < it->second.size(); i++) {
-//				file << "\t\t" << it->second[i] << "\n";
-//			}
-//		}
-//	} 
-//
-//	file.close();
-//}
+Logs::Logs() {
+	// this->filename = filename;
+	// this->stream.open(this->filename, std::ofstream::binary);
+}
+
+Logs::~Logs() {
+	this->stream.close();
+}
+
+void Logs::open() {
+	this->stream.open(this->filename, std::ofstream::binary);
+}
+
+BOOL Logs::is_open() {
+	return this->stream.is_open();
+}
+
+void Logs::write(std::string buffer) {
+	this->stream << buffer << "\n";
+}
+
+void Logs::write(std::wstring buffer) {
+	this->stream << ConvertLPCWSTRToString(buffer.c_str()) << "\n";
+}
+
+void Logs::write(LPCSTR format, ...) {
+	char buffer[1000];
+	va_list args;
+	va_start(args, format);
+	sprintf_s(buffer, sizeof(buffer), format, args);
+	this->stream << std::string(buffer) << "\n";
+	va_end(args);
+}
+
+void Logs::write(LPCWSTR format, ...) {
+	wchar_t buffer[1000];
+	va_list args;
+	va_start(args, format);
+	vswprintf(buffer, sizeof(buffer) / sizeof(wchar_t), format, args);
+	this->stream << ConvertLPCWSTRToString(std::wstring(buffer).c_str()) << "\n";
+	va_end(args);
+}
+
+void Logs::write(PBYTE buffer, ULONG length) {
+	int x = length / 16;
+	int y = length % 16;
+	for (int i = 0; i < x; i++) {
+		for (int j = 0; j < 16; j++) {
+			this->stream << std::setfill('0') << std::setw(2) << std::hex << (int)buffer[16*i+j] << " ";
+		}
+		this->stream << "     ";
+		for (int j = 0; j < 16; j++) {
+			this->stream << (char)buffer[16 * i + j];
+		}
+		this->stream << "\n";
+	}
+
+	for (int j = 0; j < y; j++) {
+		this->stream << std::setfill('0') << std::setw(2) << std::hex << (int)buffer[16 * x + j] << " ";
+	}
+	// this->stream << std::setfill(' ') << std::setw(37) << std::string(' ');
+	for (int j = 0; j < y; j++) {
+		this->stream << (char)buffer[16 * x + j];
+	}
+	this->stream << "\n";
+}
+
+Logs* mLogs = new Logs();
+
+void init_logs() {
+	mLogs->open();
+}

@@ -145,7 +145,7 @@
   <ItemGroup>
     <ClInclude Include="File.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="Hook.h" />
+    <ClInclude Include="GlobalLogs.h" />
     <ClInclude Include="HookFunctions.h" />
     <ClInclude Include="Logs.h" />
     <ClInclude Include="ObjectsManager.h" />
@@ -155,7 +155,6 @@
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="File.cpp" />
-    <ClCompile Include="Hook.cpp" />
     <ClCompile Include="HookFunctions.cpp" />
     <ClCompile Include="Logs.cpp" />
     <ClCompile Include="ObjectsManager.cpp" />

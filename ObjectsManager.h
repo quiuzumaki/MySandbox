@@ -11,37 +11,13 @@
 #ifndef OBJECTSMANAGER_H
 #define OBJECTSMANAGER_H
 
-#define MAX_SIZE 1000
-
+#define MAX_SIZE 100
 
 class Object {
 public:
-	virtual LPCSTR getInfo() = 0;
-};
-
-class ObjectFile : public Object {
-private:
-	LPCWSTR filename;
-	PVOID lpBuffer;
-	ULONG length;
-public:
-	// ObjectFile(LPCSTR, PVOID, ULONG);
-	ObjectFile(LPCWSTR filename, PVOID pBuffer = NULL, ULONG length = MAX_SIZE) {
-		this->filename = filename;
-		this->length = length;
-		this->lpBuffer = (PBYTE)malloc(length);
-
-		if (pBuffer != NULL) {
-			memcpy(this->lpBuffer, pBuffer, length);
-		}
+	virtual LPCSTR getInfo() {
+		return "Object";
 	}
-
-	LPCSTR getFileName();
-	LPCSTR getInfo();
-	VOID setBuffer(PVOID);
-	PVOID getBuffer();
-	VOID setLength(ULONG);
-	ULONG getLenght();
 };
 
 class ObjectRegistry : public Object {
@@ -51,7 +27,41 @@ private:
 public:
 	ObjectRegistry(LPCSTR, LPCSTR);
 	ObjectRegistry();
+	~ObjectRegistry();
 	LPCSTR getInfo();
+};
+
+class ObjectFile : public Object {
+private:
+	LPCWSTR filename;
+	PVOID lpBuffer;
+	ULONG length;
+public:
+	ObjectFile(LPCWSTR filename, PVOID pBuffer = NULL, ULONG length = 100) {
+		this->filename = filename;
+		this->length = 100;
+		this->lpBuffer = (PVOID)malloc(this->length);
+
+		if (pBuffer != NULL) {
+			memcpy(this->lpBuffer, pBuffer, this->length);
+		}
+		else {
+			memset(this->lpBuffer, 0, this->length);
+		}
+	}
+	ObjectFile() {
+
+	}
+	~ObjectFile() {
+		delete lpBuffer;
+	}
+
+	LPCSTR getFileName();
+	LPCSTR getInfo();
+	PVOID getBuffer();
+	ULONG getLength();
+	VOID setBuffer(PVOID);
+	VOID setLength(ULONG);
 };
 
 typedef std::pair<HANDLE, Object*> HandleEntry;
@@ -63,11 +73,12 @@ private:
 public:
 	ObjectsManager();
 	~ObjectsManager();
-	BOOL isExist(HANDLE);
-	Object* getObject(HANDLE);
-	BOOL insertEntry(HANDLE, Object*);
-	BOOL initObjectFileBuffer(HANDLE, PVOID, ULONG);
-	BOOL insertEntry(HANDLE);
+	BOOL isExist(const HANDLE);
+	Object* getObject(const HANDLE);
+	PBYTE getObjectBuffer(HANDLE);
+	ULONG getObjectLength(HANDLE);
+	BOOL insertEntry(const HANDLE, Object*);
+	LPCSTR getObjectType(const HANDLE);
 	BOOL deleteObject(HANDLE);
 	DWORD getSize();
 	BOOL isEmpty();

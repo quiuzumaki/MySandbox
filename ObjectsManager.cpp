@@ -1,24 +1,15 @@
 #include "pch.h"
 #include "ObjectsManager.h"
 
-//ObjectFile::ObjectFile(LPCWSTR filename, PVOID buffer = NULL, ULONG length = MAX_SIZE) {
-//	this->filename = filename;
-//	this->length = length;
-//	this->lpBuffer = (PBYTE)malloc(length);
-//
-//	if (buffer != NULL) {
-//		memcpy(this->lpBuffer, buffer, length);
-//	}
-//}
-
-
 LPCSTR ObjectFile::getInfo() {
-	return ConvertLPCWSTRToString(this->filename).c_str();
+	return "ObjectFile";
 }
 
 VOID ObjectFile::setBuffer(PVOID pBuffer) {
 	this->lpBuffer = (PBYTE)malloc(this->length);
-	memcpy(this->lpBuffer, pBuffer, this->length);
+	if (lpBuffer != NULL) {
+		memcpy(this->lpBuffer, pBuffer, this->length);
+	}
 }
 
 VOID ObjectFile::setLength(ULONG length) {
@@ -29,14 +20,19 @@ PVOID ObjectFile::getBuffer() {
 	return this->lpBuffer;
 }
 
-ULONG ObjectFile::getLenght() {
+ULONG ObjectFile::getLength() {
 	return this->length;
 }
 
-ObjectRegistry::ObjectRegistry(LPCSTR keyName, LPCSTR subKeyName): keyName(keyName), subKeyName(subKeyName) {}
+ObjectRegistry::ObjectRegistry(LPCSTR keyName, LPCSTR subKeyName) : keyName(keyName), subKeyName(subKeyName) {}
 
-inline LPCSTR ObjectRegistry::getInfo() {
-	return 0;
+ObjectRegistry::ObjectRegistry() {
+	this->keyName = NULL;
+	this->subKeyName = NULL;
+}
+
+LPCSTR ObjectRegistry::getInfo() {
+	return "ObjectRegistry";
 }
 
 ObjectsManager::ObjectsManager() {
@@ -47,7 +43,7 @@ ObjectsManager::~ObjectsManager() {
 	delete this->mHandleTable;
 }
 
-inline BOOL ObjectsManager::isExist(HANDLE handle) {
+inline BOOL ObjectsManager::isExist(const HANDLE handle) {
 	if (this->isEmpty()) {
 		return FALSE;
 	}
@@ -57,37 +53,46 @@ inline BOOL ObjectsManager::isExist(HANDLE handle) {
 	return TRUE;
 }
 
-Object* ObjectsManager::getObject(HANDLE handle) {
+Object* ObjectsManager::getObject(const HANDLE handle) {
 	if (this->isEmpty()) {
 		return 0;
 	}
-	/*if (this->isExist(handle)) {
-		return (*this->mHandleTable)[handle];
-	}*/
 	return (*this->mHandleTable)[handle];
 }
 
-BOOL ObjectsManager::insertEntry(HANDLE handle, Object* object) {
+//PBYTE ObjectsManager::getObjectBuffer(HANDLE handle) {
+//
+//	if (!strcmp((*this->mHandleTable)[handle]->getInfo(), "ObjectFile")) {
+//		return (PBYTE)((ObjectFile*)((*this->mHandleTable)[handle]))->getBuffer();
+//	}
+//	return NULL;
+//}
+//ULONG ObjectsManager::getObjectLength(HANDLE handle) {
+//	if (!strcmp((*this->mHandleTable)[handle]->getInfo(), "ObjectFile")) {
+//		return ((ObjectFile*)((*this->mHandleTable)[handle]))->getLength();
+//	}
+//	return NULL;
+//}
+
+LPCSTR ObjectsManager::getObjectType(const HANDLE handle) {
+	if (handle == NULL || !this->isExist(handle)) {
+		return NULL;
+	}
+
+	return (*this->mHandleTable)[handle]->getInfo();
+}
+
+BOOL ObjectsManager::insertEntry(const HANDLE handle, Object* object) {
 	if (handle == NULL || object == NULL)
 		return FALSE;
-	this->mHandleTable->insert(HandleEntry(handle, object));
-	return TRUE;
-}
-
-BOOL ObjectsManager::insertEntry(HANDLE handle) {
-	if (handle == NULL)
-		return FALSE;
-	this->mHandleTable->insert(HandleEntry(handle, NULL));
-	return TRUE;
-}
-
-BOOL ObjectsManager::initObjectFileBuffer(HANDLE handle, PVOID buffer, ULONG length) {
-	if (handle == NULL || !this->isExist(handle)) 
-		return FALSE;
-
-	LOG_STR("get null object");
-	/*((ObjectFile*)(*this->mHandleTable)[handle])->setLength(length);
-	((ObjectFile*)(*this->mHandleTable)[handle])->setBuffer(buffer);*/
+	if (!strcmp(object->getInfo(), "ObjectFile")) {
+		(*this->mHandleTable)[handle] = new ObjectFile();
+		memcpy((*this->mHandleTable)[handle], object, sizeof(ObjectFile));
+	}
+	else {
+		(*this->mHandleTable)[handle] = new ObjectRegistry();
+		memcpy((*this->mHandleTable)[handle], object, sizeof(ObjectRegistry));
+	}
 
 	return TRUE;
 }
