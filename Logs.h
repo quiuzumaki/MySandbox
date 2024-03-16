@@ -13,8 +13,6 @@
 #ifndef LOGS_H
 #define LOGS_H
 
-#define TYPE(id) typeid(id).name();
-
 class Logs {
 private:
 	std::string filename = "Logs.txt";
@@ -29,8 +27,29 @@ public:
 	void write(LPCSTR format, ...);
 	void write(LPCWSTR format, ...);
 	void write(PBYTE buffer, ULONG length);
-	void error();
+	void dump(LPVOID buffer);
 };
+
+inline
+void Logs::open() {
+	this->stream.open(this->filename);
+}
+
+inline
+BOOL Logs::is_open() {
+	return this->stream.is_open();
+}
+
+inline
+void Logs::write(std::string buffer) {
+	this->stream << buffer << "\n";
+}
+
+inline
+void Logs::write(std::wstring buffer) {
+	this->stream << ConvertLPCWSTRToString(buffer.c_str()) << "\n";
+}
+
 extern Logs* mLogs;
 
 void init_logs();
