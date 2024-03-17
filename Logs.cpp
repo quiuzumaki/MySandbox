@@ -31,7 +31,7 @@ void Logs::write(LPCWSTR format, ...) {
 	this->stream << ConvertLPCWSTRToString(std::wstring(buffer).c_str()) << "\n";
 }
 
-void Logs::write(PBYTE buffer, ULONG length) {
+void Logs::write_dump(PBYTE buffer, ULONG length) {
 	const int bytesPerLine = 16;
 	for (ULONG i = 0; i < length; i += bytesPerLine) {
 		for (int j = 0; j < bytesPerLine; j++) {

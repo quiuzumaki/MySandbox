@@ -15,9 +15,9 @@ VOID Main() {
 
     mLogs->open();
 
-    if (mLogs->is_open()) {
+    /*if (mLogs->is_open()) {
         MessageBoxA(NULL, moduleName, "DLL_PROCESS_ATTACH", NULL);
-    }
+    }*/
 }
 
 BOOL APIENTRY DllMain(

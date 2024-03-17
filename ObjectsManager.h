@@ -118,6 +118,21 @@ ULONG ObjectFile::getLength() {
 	return this->length;
 }
 
+inline
+VOID ObjectFile::setBuffer(PVOID pBuffer) {
+	this->lpBuffer = new BYTE[this->length];
+	if (lpBuffer != NULL) {
+		memcpy(this->lpBuffer, pBuffer, this->length);
+	} else {
+		memset(this->lpBuffer, 0, this->length);
+	}
+}
+
+inline
+VOID ObjectFile::setLength(ULONG length = MAX_SIZE) {
+	this->length = length;
+}
+
 inline 
 DWORD ObjectsManager::getSize() {
 	return this->mHandleTable->size();

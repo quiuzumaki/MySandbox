@@ -27,7 +27,7 @@ namespace fs = std::filesystem;
 
 static int lstDIRID[] = { DIR_WINDOWS, DIR_SYSTEM, DIR_PROGRAM_FILES, DIR_PROGRAM_FILESX86 };
 static std::string lstExtentions[] = {"*"};
-static std::string myFile[] = { "Logs.txt" };
+static std::string myFile[] = { "Logs.txt"};
 
 BOOL is_belong_to(fs::path pathName, REFKNOWNFOLDERID rfid);
 BOOL path_is_allowed(std::string pathName);

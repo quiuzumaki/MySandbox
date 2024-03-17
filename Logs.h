@@ -26,8 +26,7 @@ public:
 	void write(std::wstring buffer);
 	void write(LPCSTR format, ...);
 	void write(LPCWSTR format, ...);
-	void write(PBYTE buffer, ULONG length);
-	void dump(LPVOID buffer);
+	void write_dump(PBYTE buffer, ULONG length);
 };
 
 inline

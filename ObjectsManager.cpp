@@ -1,17 +1,6 @@
 #include "pch.h"
 #include "ObjectsManager.h"
 
-VOID ObjectFile::setBuffer(PVOID pBuffer) {
-	this->lpBuffer = new BYTE[this->length];
-	if (lpBuffer != NULL) {
-		memcpy(this->lpBuffer, pBuffer, this->length);
-	}
-}
-
-VOID ObjectFile::setLength(ULONG length) {
-	this->length = length;
-}
-
 PVOID ObjectFile::getBuffer() {
 	return this->lpBuffer;
 }
@@ -32,8 +21,8 @@ ObjectsManager::~ObjectsManager() {
 }
 
 Object* ObjectsManager::getObject(const HANDLE handle) {
-	if (this->isEmpty()) {
-		return 0;
+	if (this->isEmpty() || !this->isExist()) {
+		return NULL;
 	}
 	return (*this->mHandleTable)[handle];
 }

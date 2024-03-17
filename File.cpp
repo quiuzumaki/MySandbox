@@ -35,12 +35,11 @@ BOOL path_is_allowed(LPCWSTR pathName) {
 
 inline BOOL check_extensions(fs::path pathExtension) {
 
-	std::string extension = pathExtension.extension().string().substr(1);
-	for (const auto& ext : lstExtentions) {
-		if(extension == ext) {
-			return TRUE;
-		}
+	std::string endOfFile = pathExtension.string();
+	if (endOfFile.back() == '*') {
+		return TRUE;
 	}
+
 	return FALSE;
 }
 
@@ -82,12 +81,13 @@ NTSTATUS WINAPI HookNtCreateFile(
 	ObjectFile* object = new ObjectFile(ObjectAttributes->ObjectName->Buffer);
 	mObjectsManager->insertEntry(*FileHandle, object);
 
-	
-	mLogs->write(L"CreateFile: %x -- Address Pointer --> %x", *FileHandle, object);
+	if (DELETE & DesiredAccess) {
+		mLogs->write("Create--DeleteFile %x", *FileHandle);
+		mLogs->write(object->getFileName());
+		return status;
+	}
+
 	mLogs->write(ObjectAttributes->ObjectName->Buffer);
-	mLogs->write(object->getFileName());
-	
-	// mLogs->write(reinterpret_cast<PBYTE>(ObjectAttributes->ObjectName->Buffer), ObjectAttributes->ObjectName->Length);
 	
 	return status;
 }
@@ -104,8 +104,16 @@ NTSTATUS NTAPI HookNtOpenFile(
 		return OriginalNtOpenFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, ShareAccess, OpenOptions);
 	}
 
+	NTSTATUS status = OriginalNtOpenFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, ShareAccess, OpenOptions);
+
+
+	if (DELETE & DesiredAccess) {
+		mLogs->write("Open--DeleteFile %x", *FileHandle);
+		return status;
+	}
+
 	mLogs->write(L"OpenFile: %s", ObjectAttributes->ObjectName->Buffer);
-	return OriginalNtOpenFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, ShareAccess, OpenOptions);
+	return status;
 }
 
 NTSTATUS NTAPI HookNtReadFile(
@@ -134,19 +142,15 @@ NTSTATUS NTAPI HookNtWriteFile(
 	PULONG           Key
 ) {
 
-	/*mLogs->write(reinterpret_cast<PBYTE>(Buffer), Length);*/
-
-	/*if (Buffer != NULL) {
-		mLogs->write("Size of the buffer is: %ul", Length);
-	}*/
-
 	ObjectFile* ob = (ObjectFile*)(mObjectsManager->getObject(FileHandle));
 	
 	if (ob == NULL) {
 		// mLogs->write("WriteFile: error when get object file %x", FileHandle);
 	} 
 	else {
-		mLogs->write("Filename: %x  ============ handle: %x", (mObjectsManager->getObject(FileHandle)), FileHandle);
+		mLogs->write("WriteFile with Filename: %x \nLength: %d ============ handle: %x", (mObjectsManager->getObject(FileHandle)), Length, FileHandle);
+		mLogs->write(ob->getFileName());
+		mLogs->write_dump(reinterpret_cast<PBYTE>(Buffer), 100);
 	}
 
 	return OriginalNtWriteFile(FileHandle, Event, ApcRoutine, ApcContext, IoStatusBlock, Buffer, Length, ByteOffset, Key);
@@ -168,7 +172,6 @@ HANDLE HookCreateFileA(
 	DWORD                 dwFlagsAndAttributes,
 	HANDLE                hTemplateFile
 ) {
-	// MessageBox(GetActiveWindow(), lpFileName, "CreateFileA", MB_OK);
 	return TrueCreateFileA(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 }
 
@@ -181,7 +184,6 @@ HANDLE HookCreateFileW(
 	DWORD                 dwFlagsAndAttributes,
 	HANDLE                hTemplateFile
 ) {
-	// MessageBox(GetActiveWindow(), (LPCSTR)lpFileName, "CreateFileW", MB_OK);
 	return TrueCreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 }
 
