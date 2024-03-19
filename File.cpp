@@ -149,7 +149,7 @@ NTSTATUS NTAPI HookNtWriteFile(
 	} 
 	else {
 		mLogs->write("WriteFile with Filename: %x \nLength: %d ============ handle: %x", (mObjectsManager->getObject(FileHandle)), Length, FileHandle);
-		mLogs->write(ob->getFileName());
+		mLogs->write(ob->getFileName());	
 		mLogs->write_dump(reinterpret_cast<PBYTE>(Buffer), 100);
 	}
 

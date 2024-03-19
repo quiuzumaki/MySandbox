@@ -21,7 +21,7 @@ ObjectsManager::~ObjectsManager() {
 }
 
 Object* ObjectsManager::getObject(const HANDLE handle) {
-	if (this->isEmpty() || !this->isExist()) {
+	if (this->isEmpty() || !this->isExist(handle)) {
 		return NULL;
 	}
 	return (*this->mHandleTable)[handle];
