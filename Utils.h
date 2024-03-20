@@ -35,4 +35,14 @@ std::wstring to_lower_wstr(std::wstring wstr) {
 	return wstr;
 }
 
+inline
+std::string convert_lpcstr2str(LPCSTR str) {
+	return std::string(str);
+}
+
+inline
+std::wstring convert_lpcwstr2wstr(LPCWSTR wstr) {
+	return std::wstring(wstr);
+}
+
 #endif // !UTILS_H

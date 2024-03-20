@@ -7,7 +7,6 @@ Logs::Logs() {
 }
 
 Logs::~Logs() {
-	mLogs->write("File cancel");
 	this->stream.close();
 }
 
@@ -51,20 +50,4 @@ void Logs::write_dump(PBYTE buffer, ULONG length) {
 	}
 }
 
-//void Logs::dump(LPVOID buffer) {
-//	size_t wcharSize = wcslen(wideString) * sizeof(WCHAR);
-//
-//	// Allocate memory for the byte array
-//	PBYTE byteArray = new BYTE[wcharSize];
-//
-//	// Copy the wide character string to the byte array
-//	memcpy(byteArray, reinterpret_cast<PBYTE>(wideString), wcharSize);
-//
-//	this->write(byteArray, wcharSize);
-//}
-
 Logs* mLogs = new Logs();
-
-void init_logs() {
-	mLogs->open();
-}

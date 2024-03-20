@@ -78,17 +78,22 @@ NTSTATUS WINAPI HookNtCreateFile(
 
 	NTSTATUS status =  OriginalNtCreateFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, AllocationSize, FileAttributes, ShareAccess, CreateDisposition, CreateOptions, EaBuffer, EaLength);
 	
+	if (*FileHandle != NULL) {
+		mLogs->write(L"CreateFile: %s", (ObjectAttributes->ObjectName->Buffer));
+	}
+
 	ObjectFile* object = new ObjectFile(ObjectAttributes->ObjectName->Buffer);
 	mObjectsManager->insertEntry(*FileHandle, object);
 
 	if (DELETE & DesiredAccess) {
-		mLogs->write("Create--DeleteFile %x", *FileHandle);
-		mLogs->write(object->getFileName());
+		mLogs->write("DeleteFile: %x at %s", *FileHandle, __FUNCTION__);
 		return status;
 	}
 
-	mLogs->write(ObjectAttributes->ObjectName->Buffer);
-	
+	/*if (GENERIC_EXECUTE & DesiredAccess) {
+
+	}*/
+
 	return status;
 }
 
@@ -106,13 +111,20 @@ NTSTATUS NTAPI HookNtOpenFile(
 
 	NTSTATUS status = OriginalNtOpenFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, ShareAccess, OpenOptions);
 
-
-	if (DELETE & DesiredAccess) {
-		mLogs->write("Open--DeleteFile %x", *FileHandle);
-		return status;
+	if (*FileHandle != NULL) {
+		mLogs->write(L"OpenFile: %s", (ObjectAttributes->ObjectName->Buffer));
+	}
+	else {
+		mLogs->write("%s: FileHandle is NULL", __FUNCTION__); 
 	}
 
-	mLogs->write(L"OpenFile: %s", ObjectAttributes->ObjectName->Buffer);
+	ObjectFile* object = new ObjectFile(ObjectAttributes->ObjectName->Buffer);
+	mObjectsManager->insertEntry(*FileHandle, object);
+
+	if (DELETE & DesiredAccess) {
+		mLogs->write("DeleteFile: %x at %s", *FileHandle, __FUNCTION__);
+	}
+
 	return status;
 }
 
@@ -145,12 +157,19 @@ NTSTATUS NTAPI HookNtWriteFile(
 	ObjectFile* ob = (ObjectFile*)(mObjectsManager->getObject(FileHandle));
 	
 	if (ob == NULL) {
-		// mLogs->write("WriteFile: error when get object file %x", FileHandle);
+		mLogs->write("%s: error when get object file %x", __FUNCTION__, FileHandle);
 	} 
 	else {
-		mLogs->write("WriteFile with Filename: %x \nLength: %d ============ handle: %x", (mObjectsManager->getObject(FileHandle)), Length, FileHandle);
-		mLogs->write(ob->getFileName());	
-		mLogs->write_dump(reinterpret_cast<PBYTE>(Buffer), 100);
+		mLogs->write("\nWriteFile: Length: %d ============ handle: %x\n", Length, FileHandle);
+		mLogs->write_dump((PBYTE)Buffer, Length);
+	}
+
+	if (scan_memory((PBYTE)Buffer, Length)) {
+		mLogs->write("okie scan");
+		return NTSTATUS(0);
+	}
+	else {
+		mLogs->write("%s: memory is safety", __FUNCTION__);
 	}
 
 	return OriginalNtWriteFile(FileHandle, Event, ApcRoutine, ApcContext, IoStatusBlock, Buffer, Length, ByteOffset, Key);

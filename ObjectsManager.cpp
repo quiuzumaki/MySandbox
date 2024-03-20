@@ -38,9 +38,11 @@ LPCSTR ObjectsManager::getObjectType(const HANDLE handle) {
 BOOL ObjectsManager::insertEntry(const HANDLE handle, ObjectFile* object) {
 	if (handle == NULL || object == NULL)
 		return FALSE;
+	if (this->isExist(handle)) {
+		mLogs->write("%s: Can not insert ObjectFile", __FUNCTION__);
+		return FALSE;
+	}
 	(*this->mHandleTable)[handle] = new ObjectFile(object);
-	mLogs->write(L"Insert object entry with Address Pointer --> %x\nAfter initing the pointer is: %x", object, (*this->mHandleTable)[handle]);
-
 	return TRUE;
 }
 
