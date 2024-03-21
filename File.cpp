@@ -17,22 +17,6 @@ inline BOOL is_belong_to(fs::path path) {
 	return FALSE;
 }
 
-BOOL path_is_allowed(LPCWSTR pathName) {
-	
-	fs::path path(ConvertLPCWSTRToString(pathName));
-	if (
-		 is_belong_to(path)
-	) {
-		return TRUE;
-	}
-
-	if (check_extensions(path) || check_file(path)) {
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
 inline BOOL check_extensions(fs::path pathExtension) {
 
 	std::string endOfFile = pathExtension.string();
@@ -53,11 +37,30 @@ inline BOOL check_file(fs::path pathFile) {
 	return FALSE;
 }
 
+BOOL path_is_allowed(LPCWSTR pathName) {
+	
+	fs::path path(ConvertLPCWSTRToString(pathName));
+	if (
+		 is_belong_to(path)
+	) {
+		return TRUE;
+	}
+
+	if (check_extensions(path) || check_file(path)) {
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 TrueNtCreateFile OriginalNtCreateFile = (TrueNtCreateFile)GetFunctionPtr("ntdll", "NtCreateFile");
 TrueNtOpenFile OriginalNtOpenFile = (TrueNtOpenFile)GetFunctionPtr("ntdll", "NtOpenFile");
 TrueNtReadFile OriginalNtReadFile = (TrueNtReadFile)GetFunctionPtr("ntdll", "NtReadFile");
 TrueNtWriteFile OriginalNtWriteFile = (TrueNtWriteFile)GetFunctionPtr("ntdll", "NtWriteFile");
 TrueNtDeleteFile OriginalNtDeleteFile = (TrueNtDeleteFile)GetFunctionPtr("ntdll", "NtDeleteFile");
+
+TrueDeleteFileW OriginalDeleteFileW = DeleteFileW;
+TrueDeleteFileA OriginalDeleteFileA = DeleteFileA;
 
 NTSTATUS WINAPI HookNtCreateFile(
 	PHANDLE            FileHandle,
@@ -87,7 +90,6 @@ NTSTATUS WINAPI HookNtCreateFile(
 
 	if (DELETE & DesiredAccess) {
 		mLogs->write("DeleteFile: %x at %s", *FileHandle, __FUNCTION__);
-		return status;
 	}
 
 	/*if (GENERIC_EXECUTE & DesiredAccess) {
@@ -229,5 +231,13 @@ BOOL HookWriteFile(
 BOOL HookDeleteFileW(
 	LPCWSTR lpFileName
 ) {
-	return TRUE;
+	mLogs->write(L"%s: %s", __FUNCTIONW__, lpFileName);
+	return OriginalDeleteFileW(lpFileName);
+}
+
+BOOL HookDeleteFileA(
+	LPCSTR lpFileName
+) {
+	mLogs->write("%s: %s", __FUNCTION__, lpFileName);
+	return OriginalDeleteFileA(lpFileName);
 }

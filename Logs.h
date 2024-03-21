@@ -7,6 +7,7 @@
 #include <string>
 #include <fstream>
 #include <iomanip>
+#include <sstream>
 
 #include "Utils.h"
 
@@ -50,7 +51,5 @@ void Logs::write(std::wstring buffer) {
 }
 
 extern Logs* mLogs;
-
-void init_logs();
 
 #endif // !LOGS_H

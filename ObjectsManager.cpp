@@ -1,10 +1,6 @@
 #include "pch.h"
 #include "ObjectsManager.h"
 
-PVOID ObjectFile::getBuffer() {
-	return this->lpBuffer;
-}
-
 ObjectRegistry::ObjectRegistry(LPCSTR keyName, LPCSTR subKeyName) : keyName(keyName), subKeyName(subKeyName) {}
 
 ObjectRegistry::ObjectRegistry() {

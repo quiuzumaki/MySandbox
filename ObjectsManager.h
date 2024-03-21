@@ -40,42 +40,21 @@ typedef ObjectRegistry* PObjectRegistry;
 class ObjectFile : public Object {
 private:
 	std::wstring filename;
-	PBYTE lpBuffer;
-	ULONG length;
 public:
-	ObjectFile(LPCWSTR filename, PVOID pBuffer = NULL, ULONG length = MAX_SIZE) {
+	ObjectFile(LPCWSTR filename) {
 		this->filename = std::wstring(filename);
-		this->length = length;
-		this->lpBuffer = new BYTE[this->length];
-
-		if (pBuffer != NULL) {
-			memcpy(this->lpBuffer, pBuffer, this->length);
-		}
-		else {
-			memset(this->lpBuffer, 0, this->length);
-		}
 	}
 	ObjectFile(ObjectFile* object) {
 		this->filename = object->filename;
-		this->length = object->length;
-		this->lpBuffer = new BYTE[this->length];
-		if (object->lpBuffer != NULL) {
-			memcpy(this->lpBuffer, object->lpBuffer, this->length);
-		}
 	}
 	ObjectFile() {
 
 	}
 	~ObjectFile() {
-		delete lpBuffer;
 	}
 
 	std::wstring getFileName();
 	LPCSTR getInfo();
-	PVOID getBuffer();
-	ULONG getLength();
-	VOID setBuffer(PVOID);
-	VOID setLength(ULONG);
 };
 
 typedef ObjectFile* PObjectFile;
@@ -94,7 +73,7 @@ public:
 	BOOL insertEntry(const HANDLE, ObjectFile*);
 	LPCSTR getObjectType(const HANDLE);
 	BOOL deleteObject(HANDLE);
-	DWORD getSize();
+	size_t getSize();
 	BOOL isEmpty();
 };
 
@@ -113,28 +92,8 @@ LPCSTR ObjectFile::getInfo() {
 	return "ObjectFile";
 }
 
-inline
-ULONG ObjectFile::getLength() {
-	return this->length;
-}
-
-inline
-VOID ObjectFile::setBuffer(PVOID pBuffer) {
-	this->lpBuffer = new BYTE[this->length];
-	if (lpBuffer != NULL) {
-		memcpy(this->lpBuffer, pBuffer, this->length);
-	} else {
-		memset(this->lpBuffer, 0, this->length);
-	}
-}
-
-inline
-VOID ObjectFile::setLength(ULONG length = MAX_SIZE) {
-	this->length = length;
-}
-
 inline 
-DWORD ObjectsManager::getSize() {
+size_t ObjectsManager::getSize() {
 	return this->mHandleTable->size();
 }
 

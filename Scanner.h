@@ -2,11 +2,11 @@
 
 #include <yara.h>
 #include <iostream>
+#include "Logs.h"
+#include "Rules.h"
 
 #ifndef SCANNER_H
 #define SCANNER_H
-
-#include "Logs.h"
 
 struct USER_DATA_CTX {
 	bool match = 0;

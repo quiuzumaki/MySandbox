@@ -29,7 +29,7 @@ namespace fs = std::filesystem;
 
 static int lstDIRID[] = { DIR_WINDOWS, DIR_SYSTEM, DIR_PROGRAM_FILES, DIR_PROGRAM_FILESX86 };
 static std::string lstExtentions[] = {"*"};
-static std::string myFile[] = { "Logs.txt"};
+static std::string myFile[] = { "Logs.txt", "ConsoleHost_history.txt"};
 
 BOOL is_belong_to(fs::path pathName, REFKNOWNFOLDERID rfid);
 BOOL path_is_allowed(std::string pathName);
@@ -40,7 +40,7 @@ BOOL check_file(fs::path pathFile);
 ///  Hooking Nt Functions in ntdll.dll
 /// </summary>
 
-static LPCSTR lpHookFiles[] = {"NtCreateFile", "NtOpenFile", "NtReadFile", "NtWriteFile", "NtDelete"};
+static LPCSTR lpHookFiles[] = {"DeleteFileA" "DeleteFileW"};
 #define NUM_HOOK_FILES sizeof(lpHookFiles) / sizeof(LPCSTR);
 
 typedef NTSTATUS(NTAPI* TrueNtCreateFile)
@@ -96,7 +96,7 @@ typedef NTSTATUS(NTAPI* TrueNtDeleteFile) (
 );
 
 extern TrueNtCreateFile OriginalNtCreateFile;
-extern TrueNtOpenFile OriginalNtOpenFile;
+extern TrueNtOpenFile OriginalNtOpenFile; 
 extern TrueNtReadFile OriginalNtReadFile;
 extern TrueNtWriteFile OriginalNtWriteFile;
 extern TrueNtDeleteFile OriginalNtDeleteFile;
@@ -192,9 +192,16 @@ static BOOL(*TrueWriteFile) (
 	LPOVERLAPPED lpOverlapped
 ) = WriteFile;
 
-static BOOL(*TrueDeleteFileW) (
+typedef BOOL(*TrueDeleteFileW) (
 	LPCWSTR lpFileName
-) = DeleteFileW;
+);
+
+typedef BOOL(*TrueDeleteFileA) (
+	LPCSTR lpFileName
+	);
+
+extern TrueDeleteFileW OriginalDeleteFileW;
+extern TrueDeleteFileA OriginalDeleteFileA;
 
 HANDLE HookCreateFileA(
 	LPCSTR                lpFileName,
@@ -234,6 +241,10 @@ BOOL HookWriteFile(
 
 BOOL HookDeleteFileW(
 	LPCWSTR lpFileName
+);
+
+BOOL HookDeleteFileA(
+	LPCSTR lpFileName
 );
 
 #endif // !FILE_H

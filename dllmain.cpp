@@ -11,9 +11,10 @@
 
 VOID Main() {
 
-    CHAR moduleName[128] = "";
-    GetModuleFileNameA(NULL, moduleName, sizeof(moduleName));
+    /*CHAR moduleName[128] = "";
+    GetModuleFileNameA(NULL, moduleName, sizeof(moduleName));*/
     InstallDetoursHook();
+    // install_hook_iat("KERNELBASE.dll");
 
     mLogs->open();
 }

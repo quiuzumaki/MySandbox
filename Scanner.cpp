@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Scanner.h"
-#include "Rules.h"
+
 
 int my_callback(
 	YR_SCAN_CONTEXT* context,
@@ -16,18 +16,6 @@ int my_callback(
 		break;
 	}
 	return CALLBACK_CONTINUE;
-}
-
-void _compiler_callback(
-	int error_level,
-	const char* file_name,
-	int line_number,
-	const YR_RULE* rule,
-	const char* message,
-	void* user_data)
-{
-	if (error_level == YARA_ERROR_LEVEL_WARNING)
-		(*((int*)user_data))++;
 }
 
 
@@ -64,7 +52,6 @@ int compile_rule(char* string, YR_RULES** rules)
 	return compile_rule_ex(string, rules, strict_escape_flag);
 }
 
-
 bool scan_memory_ex(char* rule, uint8_t* buffer, int size) {
 	YR_RULES* rules;
 
@@ -87,7 +74,9 @@ bool scan_memory_ex(char* rule, uint8_t* buffer, int size) {
 		exit(EXIT_FAILURE);
 	}
 
-	// mLogs->write(std::string(ctx.meta->string));
+	if (ctx.match) {
+		mLogs->write("Found the harmful content: " + std::string(ctx.meta->string));
+	}
 
 	yr_rules_destroy(rules);
 	yr_finalize();

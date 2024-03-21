@@ -31,23 +31,25 @@ void Logs::write(LPCWSTR format, ...) {
 }
 
 void Logs::write_dump(PBYTE buffer, ULONG length) {
+	std::ostringstream stream_buffer;
 	const int bytesPerLine = 16;
 	for (ULONG i = 0; i < length; i += bytesPerLine) {
 		for (int j = 0; j < bytesPerLine; j++) {
 			if ((i + j) < length) {
-				this->stream << std::setfill('0') << std::setw(2) << std::hex << (int)buffer[i + j] << " ";
+				stream_buffer << std::setfill('0') << std::setw(2) << std::hex << (int)buffer[i + j] << " ";
 			}
 			else {
-				this->stream << "   "; // Padding for incomplete lines
+				stream_buffer << "   "; // Padding for incomplete lines
 			}
 		}
-		this->stream << "     ";
+		stream_buffer << "     ";
 		for (int j = 0; (j < bytesPerLine) && (i + j < length); j++) {
 			char c = buffer[i + j];
-			this->stream << (isprint(c) ? c : '.');
+			stream_buffer << (isprint(c) ? c : '.');
 		}
-		this->stream << "\n";
+		stream_buffer << "\n";
 	}
+	this->stream << stream_buffer.str();
 }
 
 Logs* mLogs = new Logs();
