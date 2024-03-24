@@ -10,26 +10,6 @@ Logs::~Logs() {
 	this->stream.close();
 }
 
-void Logs::write(LPCSTR format, ...) {
-	va_list args;
-	va_start(args, format);
-	int size = _vscprintf(format, args) + 1;
-	char* buffer = new char[size];
-	vsprintf_s(buffer, size, format, args);
-	va_end(args);
-	this->stream << std::string(buffer) << "\n";
-}
-
-void Logs::write(LPCWSTR format, ...) {
-	va_list args;
-	va_start(args, format);
-	int size = _vscwprintf(format, args) + 1;
-	wchar_t* buffer = new wchar_t[size];
-	vswprintf_s(buffer, size, format, args);
-	va_end(args);
-	this->stream << ConvertLPCWSTRToString(std::wstring(buffer).c_str()) << "\n";
-}
-
 void Logs::write_dump(PBYTE buffer, ULONG length) {
 	std::ostringstream stream_buffer;
 	const int bytesPerLine = 16;

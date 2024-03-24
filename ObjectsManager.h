@@ -13,26 +13,32 @@
 
 #define MAX_SIZE 100
 
+#define _OBJECT_			0x0
+#define _OBJECT_FILE_		0x1
+#define _OBJECT_REGISTRY_	0x2
+
 class Object {
 public:
-	virtual LPCSTR getInfo() {
-		return "Object";
+	virtual int getInfo() {
+		return _OBJECT_;
 	}
 };
 
 class ObjectRegistry : public Object {
 private:
-	LPCSTR subKeyName;
-	LPCSTR keyName;
+	std::wstring subKeyName;
+	std::wstring keyName;
 public:
-	ObjectRegistry(LPCSTR, LPCSTR);
+	ObjectRegistry(std::wstring, std::wstring);
 	ObjectRegistry(ObjectRegistry* object) {
 		this->subKeyName = object->subKeyName;
 		this->keyName = object->keyName;
 	}
-	ObjectRegistry();
+	ObjectRegistry() {}
 	~ObjectRegistry();
-	LPCSTR getInfo();
+	std::wstring getSubKey();
+	std::wstring getKey();
+	int getInfo();
 };
 
 typedef ObjectRegistry* PObjectRegistry;
@@ -54,7 +60,7 @@ public:
 	}
 
 	std::wstring getFileName();
-	LPCSTR getInfo();
+	int getInfo();
 };
 
 typedef ObjectFile* PObjectFile;
@@ -70,16 +76,27 @@ public:
 	~ObjectsManager();
 	BOOL isExist(const HANDLE);
 	Object* getObject(const HANDLE);
-	BOOL insertEntry(const HANDLE, ObjectFile*);
-	LPCSTR getObjectType(const HANDLE);
+	BOOL insertEntry(const HANDLE, Object*);
+	int getObjectType(const HANDLE);
 	BOOL deleteObject(HANDLE);
+	BOOL deleteObject(std::wstring);
 	size_t getSize();
 	BOOL isEmpty();
 };
 
 inline
-LPCSTR ObjectRegistry::getInfo() {
-	return "ObjectRegistry";
+int ObjectRegistry::getInfo() {
+	return _OBJECT_REGISTRY_;
+}
+
+inline
+std::wstring ObjectRegistry::getSubKey() {
+	return this->subKeyName;
+}
+
+inline
+std::wstring ObjectRegistry::getKey() {
+	return this->keyName;
 }
 
 inline
@@ -88,8 +105,8 @@ std::wstring ObjectFile::getFileName() {
 }
 
 inline
-LPCSTR ObjectFile::getInfo() {
-	return "ObjectFile";
+int ObjectFile::getInfo() {
+	return _OBJECT_FILE_;
 }
 
 inline 
@@ -114,6 +131,15 @@ BOOL ObjectsManager::isExist(const HANDLE handle) {
 }
 
 inline
+int ObjectsManager::getObjectType(const HANDLE handle) {
+	if (handle == NULL || !this->isExist(handle)) {
+		return NULL;
+	}
+
+	return (*this->mHandleTable)[handle]->getInfo();
+}
+
+inline
 BOOL ObjectsManager::deleteObject(HANDLE handle) {
 	if (this->isEmpty()) {
 		return FALSE;
@@ -123,6 +149,15 @@ BOOL ObjectsManager::deleteObject(HANDLE handle) {
 		return TRUE;
 	}
 	return FALSE;
+}
+
+inline
+BOOL ObjectsManager::deleteObject(std::wstring lpFileName) {
+	if (this->isEmpty()) {
+		return FALSE;
+	}
+	for (auto& pair : *(this->mHandleTable)) {
+	}
 }
 
 extern ObjectsManager* mObjectsManager;

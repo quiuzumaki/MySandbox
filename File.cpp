@@ -3,43 +3,9 @@
 #include "pch.h"
 #include "File.h"
 
-inline BOOL is_belong_to(fs::path path) {
-	char env_path[MAX_PATH];
-	std::string relative_path = toLowercase(path.relative_path().string());
-
-	for (int i = 0; i < sizeof(lstDIRID) / sizeof(int); i++) {
-		if (SUCCEEDED(SHGetFolderPathA(NULL, lstDIRID[i], NULL, 0, env_path))) {
-			if (relative_path.find(toLowercase(env_path)) != std::string::npos)
-				return TRUE;
-		}
-	}
-	
-	return FALSE;
-}
-
-inline BOOL check_extensions(fs::path pathExtension) {
-
-	std::string endOfFile = pathExtension.string();
-	if (endOfFile.back() == '*') {
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-inline BOOL check_file(fs::path pathFile) {
-	std::string filename = pathFile.filename().string();
-	for (const auto& file : myFile) {
-		if (file == filename) {
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
 BOOL path_is_allowed(LPCWSTR pathName) {
 	
-	fs::path path(ConvertLPCWSTRToString(pathName));
+	fs::path path(pathName);
 	if (
 		 is_belong_to(path)
 	) {
@@ -78,23 +44,17 @@ NTSTATUS WINAPI HookNtCreateFile(
 	if (path_is_allowed(ObjectAttributes->ObjectName->Buffer)) {
 		return OriginalNtCreateFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, AllocationSize, FileAttributes, ShareAccess, CreateDisposition, CreateOptions, EaBuffer, EaLength);
 	}
+	std::wstring old_file_name = std::wstring(ObjectAttributes->ObjectName->Buffer);
+	// set path of file to Desktop\Sandbox Folder
+	set_object_attributes(ObjectAttributes);
 
 	NTSTATUS status =  OriginalNtCreateFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, AllocationSize, FileAttributes, ShareAccess, CreateDisposition, CreateOptions, EaBuffer, EaLength);
 	
 	if (*FileHandle != NULL) {
-		mLogs->write(L"CreateFile: %s", (ObjectAttributes->ObjectName->Buffer));
+		mLogs->write(L"CreateFile: \n\tFileName: %s", old_file_name.c_str());
 	}
 
-	ObjectFile* object = new ObjectFile(ObjectAttributes->ObjectName->Buffer);
-	mObjectsManager->insertEntry(*FileHandle, object);
-
-	if (DELETE & DesiredAccess) {
-		mLogs->write("DeleteFile: %x at %s", *FileHandle, __FUNCTION__);
-	}
-
-	/*if (GENERIC_EXECUTE & DesiredAccess) {
-
-	}*/
+	mObjectsManager->insertEntry(*FileHandle, new ObjectFile(old_file_name.c_str()));
 
 	return status;
 }
@@ -111,21 +71,18 @@ NTSTATUS NTAPI HookNtOpenFile(
 		return OriginalNtOpenFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, ShareAccess, OpenOptions);
 	}
 
+	std::wstring old_file_name = std::wstring(ObjectAttributes->ObjectName->Buffer);
+	set_object_attributes(ObjectAttributes);
 	NTSTATUS status = OriginalNtOpenFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, ShareAccess, OpenOptions);
-
+	
 	if (*FileHandle != NULL) {
-		mLogs->write(L"OpenFile: %s", (ObjectAttributes->ObjectName->Buffer));
+		mLogs->write(L"OpenFile: %s", old_file_name.c_str());
 	}
 	else {
 		mLogs->write("%s: FileHandle is NULL", __FUNCTION__); 
 	}
 
-	ObjectFile* object = new ObjectFile(ObjectAttributes->ObjectName->Buffer);
-	mObjectsManager->insertEntry(*FileHandle, object);
-
-	if (DELETE & DesiredAccess) {
-		mLogs->write("DeleteFile: %x at %s", *FileHandle, __FUNCTION__);
-	}
+	mObjectsManager->insertEntry(*FileHandle, new ObjectFile(old_file_name.c_str()));
 
 	return status;
 }
@@ -141,6 +98,25 @@ NTSTATUS NTAPI HookNtReadFile(
 	PLARGE_INTEGER   ByteOffset,
 	PULONG           Key
 ) {
+	if (!mObjectsManager->isExist(FileHandle)) {
+		mLogs->write("%s: FileHanle %x is not in ObjectManager", __FUNCTION__, FileHandle);
+		goto exit;
+	}
+	else {
+		auto ob = (PObjectFile)(mObjectsManager->getObject(FileHandle));
+		mLogs->write(L"\nReadFile: \n\tFileName: %s\n\tLength: %d\n", ob->getFileName().c_str(), Length);
+		mLogs->write_dump((PBYTE)Buffer, Length);
+	}
+
+	if (scan_memory((PBYTE)Buffer, Length)) {
+		mLogs->write("okie scan");
+		return NTSTATUS(0);
+	}
+	else {
+		mLogs->write("%s: memory is safety", __FUNCTION__);
+	}
+
+exit:
 	return OriginalNtReadFile(FileHandle, Event, ApcRoutine, ApcContext, IoStatusBlock, Buffer, Length, ByteOffset, Key);
 }
 
@@ -155,25 +131,25 @@ NTSTATUS NTAPI HookNtWriteFile(
 	PLARGE_INTEGER   ByteOffset,
 	PULONG           Key
 ) {
-
-	ObjectFile* ob = (ObjectFile*)(mObjectsManager->getObject(FileHandle));
-	
-	if (ob == NULL) {
-		mLogs->write("%s: error when get object file %x", __FUNCTION__, FileHandle);
+	if (!mObjectsManager->isExist(FileHandle)) {
+		mLogs->write("%s: FileHanle %x is not in ObjectManager", __FUNCTION__, FileHandle);
+		goto exit;
 	} 
 	else {
-		mLogs->write("\nWriteFile: Length: %d ============ handle: %x\n", Length, FileHandle);
+		auto ob = (PObjectFile)(mObjectsManager->getObject(FileHandle));
+		mLogs->write(L"\nWriteFile: \n\tFileName: %s\n\tLength: %d\n", ob->getFileName().c_str(), Length);
 		mLogs->write_dump((PBYTE)Buffer, Length);
 	}
 
 	if (scan_memory((PBYTE)Buffer, Length)) {
-		mLogs->write("okie scan");
+		// mLogs->write("okie scan");
 		return NTSTATUS(0);
 	}
 	else {
 		mLogs->write("%s: memory is safety", __FUNCTION__);
 	}
 
+exit:
 	return OriginalNtWriteFile(FileHandle, Event, ApcRoutine, ApcContext, IoStatusBlock, Buffer, Length, ByteOffset, Key);
 }
 
@@ -231,7 +207,10 @@ BOOL HookWriteFile(
 BOOL HookDeleteFileW(
 	LPCWSTR lpFileName
 ) {
-	mLogs->write(L"%s: %s", __FUNCTIONW__, lpFileName);
+	if (!path_is_allowed(lpFileName)) {
+		mLogs->write(L"DeleteFile: %s", lpFileName);
+		return TRUE;
+	}
 	return OriginalDeleteFileW(lpFileName);
 }
 

@@ -27,14 +27,89 @@ namespace fs = std::filesystem;
 #define DIR_SYSTEMX86                 0x0029        // x86 system directory on RISC
 #define DIR_PROGRAM_FILESX86          0x002a        // x86 C:\Program Files on RISC
 
-static int lstDIRID[] = { DIR_WINDOWS, DIR_SYSTEM, DIR_PROGRAM_FILES, DIR_PROGRAM_FILESX86 };
-static std::string lstExtentions[] = {"*"};
-static std::string myFile[] = { "Logs.txt", "ConsoleHost_history.txt"};
 
-BOOL is_belong_to(fs::path pathName, REFKNOWNFOLDERID rfid);
+static int lstDIRID[] = { DIR_WINDOWS, DIR_SYSTEM, DIR_PROGRAM_FILES, DIR_PROGRAM_FILESX86 };
+static std::string lstExtentions[] = { "*" };
+static std::string myFile[] = { "Logs.txt", "ConsoleHost_history.txt" };
+
+
+inline 
+BOOL is_belong_to(fs::path path) {
+	char env_path[MAX_PATH];
+	std::string relative_path = toLowercase(path.relative_path().string());
+
+	for (int i = 0; i < sizeof(lstDIRID) / sizeof(int); i++) {
+		if (SUCCEEDED(SHGetFolderPathA(NULL, lstDIRID[i], NULL, 0, env_path))) {
+			if (relative_path.find(toLowercase(env_path)) != std::string::npos)
+				return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+
+inline 
+BOOL check_extensions(fs::path pathExtension) {
+
+	std::string endOfFile = pathExtension.string();
+	if (endOfFile.back() == '*') {
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+inline 
+BOOL check_file(fs::path pathFile) {
+	std::string filename = pathFile.filename().string();
+	for (const auto& file : myFile) {
+		if (file == filename) {
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+inline
+std::wstring get_file_name(std::wstring path) {
+	fs::path pathToFile(path);
+	if (pathToFile.has_filename()) {
+		return pathToFile.filename().wstring();
+	}
+	return L"";
+}
+
 BOOL path_is_allowed(std::string pathName);
-BOOL check_extensions(fs::path pathExtension);
-BOOL check_file(fs::path pathFile);
+
+inline
+std::wstring get_desktop_path() {
+	wchar_t env_path[MAX_PATH];
+	if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_DESKTOP, NULL, 0, env_path))) {
+		return std::wstring(env_path);
+	}
+	return L"";
+}
+
+inline
+std::wstring create_directory(std::wstring pathToDir) {
+	fs::path path(pathToDir);
+	if (fs::exists(path)) {
+		return path.wstring();
+	}
+	fs::create_directory(path);
+	return path.wstring();
+}
+
+static std::wstring path_to_sandbox = create_directory(get_desktop_path() + L"\\Sandbox\\");
+
+inline
+void set_object_attributes(POBJECT_ATTRIBUTES object_attributes) {
+	std::wstring file = L"\\??\\" + path_to_sandbox + get_file_name(std::wstring(object_attributes->ObjectName->Buffer));
+	object_attributes->ObjectName->Buffer = (PWSTR)file.c_str();
+	object_attributes->ObjectName->Length = file.size() * 2;
+	object_attributes->ObjectName->MaximumLength = file.size() * 2 + 2;
+}
 
 /// <summary>
 ///  Hooking Nt Functions in ntdll.dll

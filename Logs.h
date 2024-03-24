@@ -50,6 +50,28 @@ void Logs::write(std::wstring buffer) {
 	this->stream << ConvertLPCWSTRToString(buffer.c_str()) << "\n";
 }
 
+inline
+void Logs::write(LPCSTR format, ...) {
+	va_list args;
+	va_start(args, format);
+	int size = _vscprintf(format, args) + 1;
+	char* buffer = new char[size];
+	vsprintf_s(buffer, size, format, args);
+	va_end(args);
+	this->stream << std::string(buffer) << "\n";
+}
+
+inline
+void Logs::write(LPCWSTR format, ...) {
+	va_list args;
+	va_start(args, format);
+	int size = _vscwprintf(format, args) + 1;
+	wchar_t* buffer = new wchar_t[size];
+	vswprintf_s(buffer, size, format, args);
+	va_end(args);
+	this->stream << ConvertLPCWSTRToString(std::wstring(buffer).c_str()) << "\n";
+}
+
 extern Logs* mLogs;
 
 #endif // !LOGS_H

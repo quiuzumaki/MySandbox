@@ -18,7 +18,6 @@ int my_callback(
 	return CALLBACK_CONTINUE;
 }
 
-
 int compile_rule_ex(char* string, YR_RULES** rules, bool strict_escape_flag)
 {
 	YR_COMPILER* compiler = NULL;
